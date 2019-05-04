@@ -1,0 +1,307 @@
+
+teller_password = {} #tellers dictionary storing name:password
+item_stoc_price = {} #store all items in stock and price
+teller_sales ={} #dict store item_name:amount_tendered:total
+
+Function main:
+    CALL: handleLogins()
+EndFunction
+
+Function handleLogins:
+    CALL: p = LandingPage()
+    switch(p):
+    	case 1:
+    		CALL: q = adminLogin()//complete
+    		IF q== 1:
+    			CALL: adminHomeScreen()//complete
+            ELSE:
+                PRINT "Invalid Password"
+                CALL: handleLogins()
+    	case 2:
+    		CALL: tellerLogin()//login done
+    	case 3:
+    		EXIT program
+EndFunction
+
+Function landingPage:
+    PRINT "*****************************************"
+    PRINT "*    Welcome to Vinah's Kiosk    *"
+    PRINT "*    The Finest Kiosk in Town    *"
+    PRINT "*   With a Frame of Essence      *"
+    PRINT "*****************************************"#Vinah's Kiosk banner
+    PRINT "1. Login as Admin\n2. Login as Teller/Shop assistant\n3. Quit"
+    
+    REPEAT:
+        READ choice_login
+        SWITCH(choice_login):
+            CASE 1:
+                ret_val = 1;
+                is_done = "Yes"
+            CASE 2:
+                ret_val = 2;
+                is_done = "Yes";
+            CASE 3:
+                PRINT "Thank you, have a nice day!"
+                EXIT program
+            DEFAULT:
+                is_done = "No";
+                PRINT "Invalid entry, please try again"
+    UNTIL isdone == "NO"
+    RETURN ret_val
+
+
+
+
+Function adminLogin:
+	admin_password = "PASSWORD"
+	PRINT "Enter admin password"
+	INPUT attempt_password
+	IF attempt_pass == admin_password:
+	   RETURN 1
+    ELSE:
+        RETURN 0
+EndFunction
+
+Function tellerLogin:
+	IF teller_password.empty == True:
+		PRINT "No tellers have been registered!"
+		CALL: handleLogins()
+	ELSE
+		PRINT "Enter name:"
+		INPUT t_name
+		IF t_name in teller_password: #check IF name in dictionary
+			PRINT "Enter password for "+t_name
+			INPUT t_pass
+			IF t_pass in teller_password where teller_password == t_name:
+				CALL: tellerHomeScreen with t_name
+			ELSE:
+				PRINT "Invalid password!"
+				CALL: tellerLogin()
+		ELSE:
+			PRINT t_name+" not found"
+			CALL: tellerLogin()
+		
+EndFunction
+Function printReceipt(cashier,product,quantity, price,total, tendered,change,all_total):
+    PRINT "* Vinah's Kiosk               *"
+    PRINT "* The Finest Kiosk in Town    *"
+    PRINT "* With a Frame of Essence     *"
+    PRINT "Name\tQTY\tPrice\tTotal"
+    FOR index=0 to product length:
+    	PRINT product and quantity and price and all_total at position index
+    
+    vat = all_total * 0.15
+    vat_total = all_total * vat
+    PRINT vat
+    PRINT "Total\t"+vat_total
+    PRINT "Tendered\t"+tendered
+    PRINT "Change\t"+ change
+    PRINT "Cashier" + cashier
+    PRINT "Thank You For Your Support. Please call again!"
+
+EndFunction
+Function getDisbursement(change):
+  amt_dollar,amt_cent = change.split(".")
+  #valid dollar currency notes and coins available to use
+  Legal_Note = [200,100,50,20,10,5,1]
+  Legal_Cent = [50,10,5]
+  #find dollars
+  FOR each i in Legal_Cent:
+      IF i < amt_dollar:
+        current1 = amt_dollar/i
+        IF i == number in Legal_Note:
+          current1 = number in Legal_Note
+        	amt_dollar = amt_dollar %i
+  #find cents
+  FOR each i in Legal_Cent:
+      IF i < amt_cent:
+        	current1 = amt_cent/i
+        	IF i == nums in Legal_Cent:
+        	  number of nums + 1 #add 1 to number of times it's used e.g. i==200(num_200) then num_200 +1
+        		current1 = number in Legal_Cent
+        		amt_cent = amt_cent %i
+  PRINT "Your change is disbursed as follows: "+num_200+num_100+ num_50+num_200+num_10+ num_20 +num_5+num_1+num50c+num10c+num5c
+EndFunction
+
+Function tellerHomeScreen(username):
+	WHILE True:
+        PRINT "Select an option\n1.Sell item\n2.Overall stock summary\n3.Summary of your sales\n4.Quit"
+        READ selection
+        SWITCH(selection):
+        	CASE 1:#sell item
+        		PRINT "Enter item name"
+        		READ item_name
+        		IF item_stoc_price not empty:
+        			PRINT "Enter number of items"
+        			INPUT num_items
+        			rec_items = []
+        			rec_price = []
+        			rec_total = []
+        			rec_quan = []
+        			rec_diff_stock = []
+
+        			FOR index=0 to num_items-1:
+        				PRINT "Enter item"
+        				INPUT item_name #prompt fo item name
+
+        				IF item_stoc_price contains item_name:#is in
+        					PRINT "Enter quantity"
+        					INPUT quantity
+	        				IF quantity of item_name > 0:
+	        					#check IF quantity entered is in excess
+	        					diff_stock = old_stock - quantity
+	        					rec_items[index] = item_name
+	        					rec_quan[index] = quantity #add to list of items sold
+	        					total = price_per_item * quantity;
+	        					overall_total += total
+								rec_diff_stock[index] = diff_stock
+							ELSE:
+								PRINT "Invalid quantity"
+								CALL: tellerHomeScreen with username
+						ELSE:
+							PRINT item_name+" not found in stock"
+							CALL: tellerHomeScreen with username
+					PRINT "Total Cost: "+overall_total
+					PRINT "Enter amount tendered"
+					INPUT amt_tendered
+					FOR index=0 to rec_items length:
+						IF quantity of rec_diff_stock at index >= 0:
+							IF amt_tendered >= overall_total including vat:
+								change = amt_tendered - overall_total including vat
+								item_stoc_price.insert(rec_items at index)#reduce stock
+								teller_sales.insert(at username, quantity sold, price of item)
+
+							ELSE:
+								PRINT "Unable to complete transaction, you are short of money."
+								BREAK
+						ELSE:
+							PRINT "Quantity exceeds available stock, either reduce quantity or restock"
+							BREAK
+					PRINT "Change: "+change
+					IF change <= 0.9 and change >0.0:
+						Legal_Cent = [50,10,5] #valid cents
+						amt_cent = 0
+					    FOR each i in Legal_Cent:
+					      IF i <= amt_cent:
+					        current1 = amt_cent/i
+					        IF i == nums in Legal_Cent:
+					          current1 = number in Legal_Cent
+					          amt_cent = amt_cent %i
+	        			PRINT "Your change is disbursed as follows: " with amount of each note and cent
+
+					ELSE:
+						CALL: printReceipt with username, rec_items, rec_quan, rec_price, rec_total, amt_tendered, change,overall_total
+	        			CALL: getDisbursement with change
+
+        		ELSE:
+        			PRINT "No products in stock"
+
+            
+            CASE 2:
+                FOR each stock_item in item_stoc_price:
+                    PRINT stock_item + stock_item quantity
+            CASE 3:
+                IF teller_sales not empty:
+                    FOR each current_teller in teller_sales:
+                        IF current_teller == username:
+                            PRINT "Product      Price"
+                            FOR each item in teller_sales WHERE user == current_teller:
+                                PRINT item[0] +"        "+item[1] #Item name and quantity ,,list
+
+                        ELSE:
+                            PRINT "Nothing found for "+username
+                ELSE:
+                    PRINT "No tellers found!"
+            CASE 4:
+                #reset the total of prices to get ready for next cashier
+                total_price = 0
+                CALL: handleLogins()
+            DEFAULT:
+                PRINT "Invalid entry selected"
+EndFunction
+
+Function addTellers:
+	PRINT "Enter teller name:"
+	INPUT t_name
+	PRINT "ENTER password for "+t_name
+	teller_password.insert(t_name, t_pass)
+	PRINT t_name + " is now part of the Vinah family"
+	CALL: adminHomeScreen()
+EndFunction
+
+Function stockControl:
+	PRINT "What would you like to do:\n1.Restock item\n2.Add new item\n3.Change price\n4.Show items that need restock\n5.Back"
+	INPUT command
+
+	switch(command):
+		case 1:
+			PRINT "Enter item to restock"
+			INPUT item_name
+			IF item_name in item_stoc_price:
+				PRINT "Enter the additional stock amount"
+				INPUT new_stock_amt
+				IF new_stock_amt > 0:
+					item_stoc_price.insert(item_name, new_stock_amt)
+					PRINT "Restock complete"
+				ELSE:
+					PRINT "Negative stock not allowed!"
+			PRINT "Item: "+item_name+" not found! Try again"
+			CALL: stockControl()
+		case 2:#Add item
+			PRINT "Enter item name"
+			INPUT new_name
+			PRINT "Enter quantity of "+ new_name
+			INPUT quantity
+			PRINT "Enter price of "+new_name
+			INPUT price
+
+			IF quantity >= 0 OR price > 0:
+				item_stoc_price.insert(new_name,quantity,price)
+				PRINT new_name+" has been added to stock"
+			ELSE:
+				IF quantity < 0:
+					which_one = "quantity"
+				ELSE:
+					IF price < 0:
+						which_one = "price"
+				PRINT "Negative "+which_one+" not allowed!"
+			CALL: stockControl()
+			
+		case 3:#change price
+			PRINT "Enter item name to change price"
+			INPUT item_name
+			IF item_name in item_stoc_price:
+				PRINT "ENTER new price of " + item_name
+				INPUT new_price
+				IF new_price > 0:
+					item_stoc_price.insert(item_name, new_price)
+				ELSE:
+					PRINT "Negative price not allowed!"
+			ELSE:
+				PRINT item_name + " not found!"
+			CALL: stockControl()
+		case 4:#List all items
+			IF !item_stoc_price.empty:
+				for stock_item in item_stoc_price.items:
+					IF item_stoc_price.get(stock_item)[0] <= 25:
+						PRINT stock_item+" needs restocking"
+			ELSE:
+				PRINT "No items found"
+			CALL: stockControl()
+
+		case 5:
+			CALL: adminHomeScreen()
+EndFunction
+
+Function adminHomeScreen:
+	PRINT "What would you like to do:\n1.Stock contol\n2.Add new Tellers\n3.Logout"
+	INPUT to_do
+	switch(to_do):
+		case 1:
+			CALL: stockControl()//complete
+		case 2:
+			CALL: addTellers()/complete
+		case 3:
+			CALL: handleLogins()//complete
+EndFunction
+
